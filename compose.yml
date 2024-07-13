@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mariadb
+    restart: always
+    ports:
+      - 3336:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: q1w2e3r4t5y6
+      MYSQL_DATABASE: app
+    volumes:
+      - db-files:/var/mysql
+  cache:
+    image: redis
+    restart: always
+    ports:
+      - 6379:6379
+
+volumes:
+  db-files:

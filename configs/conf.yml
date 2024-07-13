@@ -1,0 +1,3 @@
+port: 8080
+
+db_link: mysql://root:q1w2e3r4t5y6@tcp(localhost:3336)/app?charset=utf8mb4&parseTime=True&loc=Local
