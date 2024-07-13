@@ -3,9 +3,9 @@ package service
 import (
 	"crypto/sha512"
 	"fmt"
+	"github.com/DikosAs/GoAuthApi.git/src/repository"
+	"github.com/DikosAs/GoAuthApi.git/src/repository/objects"
 	"github.com/dgrijalva/jwt-go"
-	"go_back/src/repository"
-	"go_back/src/repository/objects"
 	"time"
 )
 

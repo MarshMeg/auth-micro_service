@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"github.com/DikosAs/GoAuthApi.git/src/service"
 	"github.com/gin-gonic/gin"
-	"go_back/src/service"
 )
 
 type Handler struct {

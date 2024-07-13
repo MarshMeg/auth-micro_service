@@ -1,13 +1,13 @@
 package main
 
 import (
+	server "github.com/DikosAs/GoAuthApi.git/src"
+	"github.com/DikosAs/GoAuthApi.git/src/handler"
+	"github.com/DikosAs/GoAuthApi.git/src/repository"
+	"github.com/DikosAs/GoAuthApi.git/src/service"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/viper"
-	server "go_back/src"
-	"go_back/src/handler"
-	"go_back/src/repository"
-	"go_back/src/service"
 	"log"
 )
 

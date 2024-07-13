@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"github.com/DikosAs/GoAuthApi.git/src/repository/objects"
 	"github.com/gin-gonic/gin"
-	"go_back/src/repository/objects"
 	"net/http"
 )
 

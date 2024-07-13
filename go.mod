@@ -1,4 +1,4 @@
-module go_back
+module github.com/DikosAs/GoAuthApi.git
 
 go 1.22
 

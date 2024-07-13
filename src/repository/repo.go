@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"github.com/DikosAs/GoAuthApi.git/src/repository/objects"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
-	"go_back/src/repository/objects"
 	"time"
 )
 

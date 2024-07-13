@@ -1,8 +1,8 @@
 package service
 
 import (
-	"go_back/src/repository"
-	"go_back/src/repository/objects"
+	"github.com/DikosAs/GoAuthApi.git/src/repository"
+	"github.com/DikosAs/GoAuthApi.git/src/repository/objects"
 )
 
 type Authorisation interface {
