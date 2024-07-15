@@ -1,19 +1,26 @@
 package repository
 
 import (
-	"github.com/jmoiron/sqlx"
-	"strings"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func NewMysqlDB(link string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect(strings.Split(link, "://")[0], strings.Split(link, "://")[1])
+type User struct {
+	Id       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func NewMysqlClient(link string) (*gorm.DB, error) {
+	db, err := gorm.Open(mysql.Open(link), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = db.Ping(); err != nil {
+	err = db.AutoMigrate(&User{})
+	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	return db, err
 }

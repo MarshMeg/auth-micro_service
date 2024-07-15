@@ -16,19 +16,15 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	fileDB, err := repository.NewMysqlDB(viper.GetString("db_link"))
+	fileDB, err := repository.NewMysqlClient(viper.GetString("db_link"))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	var cacheDB *redis.Client = repository.NewRedisDB(&repository.RedisConfig{
-		Host:     "localhost",
-		Port:     0,
-		Password: "",
-		DBNum:    1,
+	rediska := repository.NewRedisClient(&redis.Options{
+		Addr: viper.GetString("redis_ka"),
 	})
 
-	var repository_ *repository.Repository = repository.NewRepository(fileDB, cacheDB)
+	var repository_ *repository.Repository = repository.NewRepository(fileDB, rediska)
 	var services *service.Service = service.NewService(repository_)
 	var handlers *handler.Handler = handler.NewHandler(services)
 

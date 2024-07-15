@@ -1,35 +1,42 @@
 package repository
 
 import (
-	"github.com/jmoiron/sqlx"
-	"go_back/src/repository/objects"
+	"context"
+	"fmt"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+	"time"
 )
 
 type AuthDB struct {
-	db *sqlx.DB
+	db    *gorm.DB
+	cache *redis.Client
 }
 
-func NewAuthDB(db *sqlx.DB) *AuthDB {
-	return &AuthDB{db: db}
+func NewAuthDB(db *gorm.DB, rediska *redis.Client) *AuthDB {
+	return &AuthDB{db: db, cache: rediska}
 }
 
-func (d *AuthDB) CreateUser(user objects.User) (int, error) {
-	result, err := d.db.Exec("INSERT INTO `Users`(`username`, `password`) VALUES(?, ?)", user.Username, user.Password)
-	if err != nil {
-		return 0, err
+func (d *AuthDB) CreateUser(user User) (User, error) {
+	result := d.db.Create(&user)
+	if result.Error != nil {
+		return user, result.Error
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(id), nil
+	return user, nil
 }
 
-func (d *AuthDB) GetUser(username, password string) (objects.User, error) {
-	var user objects.User
+func (d *AuthDB) GetUser(username string) (User, error) {
+	var user User
+	err := d.db.Where("`username`=?", username).First(&user)
+	return user, err.Error
+}
 
-	err := d.db.Get(&user, "SELECT `id` FROM `Users` WHERE `username`=? AND `password`=?", username, password)
-	return user, err
+func (d *AuthDB) SetTokens(access *AccessToken, refresh *RefreshToken) error {
+	err := d.cache.Set(context.Background(), access.Token, fmt.Sprintf("access_key.%d", access.UserID), time.Duration(access.TTL)).Err()
+	if err != nil {
+		return err
+	}
+	err = d.cache.Set(context.Background(), refresh.Token, fmt.Sprintf("refresh_key.%d", refresh.UserID), time.Duration(refresh.TTL)).Err()
+	return err
 }

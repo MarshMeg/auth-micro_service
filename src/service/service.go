@@ -2,12 +2,11 @@ package service
 
 import (
 	"github.com/DikosAs/GoAuthApi.git/src/repository"
-	"github.com/DikosAs/GoAuthApi.git/src/repository/objects"
 )
 
 type Authorisation interface {
-	CreateUser(user objects.User) (int, error)
-	GenerateToken(username, password string) (string, error)
+	CreateUser(user repository.User) (repository.User, error)
+	GenerateToken(username, password string) (*AuthTokens, error)
 }
 
 type Service struct {

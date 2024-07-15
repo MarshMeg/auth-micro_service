@@ -25,11 +25,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 				auth.POST("/register", h.Register)
 				auth.POST("/login", h.Login)
 			}
-
-			//mail := v1.Group("/mail")
-			//{
-			//	mail.POST("/sand")
-			//}
 		}
 	}
 
