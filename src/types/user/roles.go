@@ -1,8 +1,8 @@
 package user
 
 const (
-	Admin     = 1
-	Moderator = 5
-	Service   = 8
-	User      = 10
+	Admin     = 10
+	Moderator = 8
+	Service   = 5
+	User      = 1
 )

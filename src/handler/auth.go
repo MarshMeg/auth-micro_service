@@ -138,6 +138,28 @@ func (h *AuthHandler) PatchUser(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]interface{}{})
 }
 
+func (h *AuthHandler) GetUsers(c *gin.Context) {
+	_, userId, initializer := h.getAuth(c)
+	if initializer == request.User {
+		user, _ := h.storage.Auth.GetUser("", userId)
+		if user.Role < userRoles.Service {
+			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
+			return
+		}
+	}
+
+	users, err := h.storage.GetUsers(&types.User{
+		Id:       types.StrToInt(c.GetHeader("id")),
+		Username: c.GetHeader("username"),
+		Role:     types.StrToInt(c.GetHeader("role")),
+	})
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, users)
+}
+
 func passwdHash(passwd string) string {
 	var hash = sha512.New()
 	hash.Write([]byte(passwd))

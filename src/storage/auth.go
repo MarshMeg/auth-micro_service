@@ -62,10 +62,25 @@ func (d *AuthStorage) GetUserIDByToken(t string) (string, int, error) {
 	if len(parts) != 2 {
 		return "", 0, errors.New("incorrect key")
 	}
-	id, err := types.StrToInt(parts[1])
-	return parts[0], id, err
+	return parts[0], types.StrToInt(parts[1]), err
 }
 
 func (d *AuthStorage) UpdateUser(user types.User) error {
 	return d.db.Model(&user).Update("username", user.Username).Update("password", user.Password).Error
+}
+
+func (d *AuthStorage) GetUsers(filters *types.User) ([]types.User, error) {
+	var users []types.User
+	res := *d.db.Select([]string{"id", "username", "role"})
+	if filters.Id != 0 {
+		res.Where("`id`=?", filters.Id)
+	}
+	if filters.Username != "" {
+		res.Where("`username`=?", filters.Username)
+	}
+	if filters.Role != 0 {
+		res.Where("`role`=?", filters.Role)
+	}
+	res.Find(&users)
+	return users, res.Error
 }

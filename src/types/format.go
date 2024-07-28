@@ -4,7 +4,10 @@ import (
 	"strconv"
 )
 
-func StrToInt(i string) (int, error) {
+func StrToInt(i string) int {
 	id, err := strconv.Atoi(i)
-	return id, err
+	if err != nil {
+		return 0
+	}
+	return id
 }

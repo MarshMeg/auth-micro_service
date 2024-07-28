@@ -27,6 +27,7 @@ func (r *Router) InitRoutes(mode string) *gin.Engine {
 				auth.POST("/login", r.handler.Login)
 				auth.GET("/check_auth", r.handler.CheckAuth)
 				auth.PATCH("/user", r.handler.PatchUser)
+				auth.GET("/users", r.handler.GetUsers)
 			}
 		}
 	}
