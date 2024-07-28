@@ -1,4 +1,4 @@
-package repository
+package controllers
 
 import (
 	"github.com/go-redis/redis/v8"

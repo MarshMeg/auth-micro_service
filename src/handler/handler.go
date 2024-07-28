@@ -1,32 +1,22 @@
 package handler
 
 import (
-	"github.com/DikosAs/GoAuthApi.git/src/service"
+	"github.com/DikosAs/GoAuthApi.git/src/storage"
 	"github.com/gin-gonic/gin"
 )
 
+type Auth interface {
+	Register(c *gin.Context)
+	Login(c *gin.Context)
+	//CheckAuth(c *gin.Context)
+}
+
 type Handler struct {
-	services *service.Service
+	Auth
 }
 
-func NewHandler(services *service.Service) *Handler {
-	return &Handler{services: services}
-}
-
-func (h *Handler) InitRoutes() *gin.Engine {
-	router := gin.New()
-
-	api := router.Group("/api")
-	{
-		v1 := api.Group("/v1")
-		{
-			auth := v1.Group("/auth")
-			{
-				auth.POST("/register", h.Register)
-				auth.POST("/login", h.Login)
-			}
-		}
+func NewHandler(storage *storage.Storage) *Handler {
+	return &Handler{
+		Auth: NewAuthHandler(storage),
 	}
-
-	return router
 }
