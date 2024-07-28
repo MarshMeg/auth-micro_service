@@ -76,7 +76,7 @@ func (d *AuthStorage) GetUsers(filters *types.User) ([]types.User, error) {
 		res.Where("`id`=?", filters.Id)
 	}
 	if filters.Username != "" {
-		res.Where("`username`=?", filters.Username)
+		res.Where("INSTR(username, ?) > 0", filters.Username)
 	}
 	if filters.Role != 0 {
 		res.Where("`role`=?", filters.Role)

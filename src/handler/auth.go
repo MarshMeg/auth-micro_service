@@ -149,10 +149,11 @@ func (h *AuthHandler) GetUsers(c *gin.Context) {
 	}
 
 	users, err := h.storage.GetUsers(&types.User{
-		Id:       types.StrToInt(c.GetHeader("id")),
-		Username: c.GetHeader("username"),
-		Role:     types.StrToInt(c.GetHeader("role")),
+		Id:       types.StrToInt(c.Query("id")),
+		Username: c.Query("username"),
+		Role:     types.StrToInt(c.Query("role")),
 	})
+
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
