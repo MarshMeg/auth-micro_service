@@ -8,6 +8,7 @@ import (
 	"github.com/DikosAs/auth-micro_service.git/src/storage"
 	"github.com/DikosAs/auth-micro_service.git/src/types"
 	"github.com/DikosAs/auth-micro_service.git/src/types/request"
+	userRoles "github.com/DikosAs/auth-micro_service.git/src/types/user"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -44,6 +45,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
 		return
 	}
+	input.Role = userRoles.User
 
 	if _, err := h.storage.Auth.GetUser(input.Username, 0); err == nil {
 		newErrorResponse(c, http.StatusBadRequest, "User is already registered")
@@ -114,13 +116,15 @@ func (h *AuthHandler) PatchUser(c *gin.Context) {
 		return
 	}
 
+	userClient, _ := h.storage.GetUser("", userId)
+
 	var input types.User
 	if err := c.BindJSON(&input); err != nil || input.Username == "" {
 		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
-	if userId != input.Id {
+	if userId != input.Id && userClient.Role < userRoles.Admin {
 		newErrorResponse(c, http.StatusForbidden, "You do not have access to this account")
 	}
 
