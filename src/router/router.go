@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/DikosAs/GoAuthApi.git/src/handler"
+	"github.com/DikosAs/auth-micro_service.git/src/handler"
 	"github.com/gin-gonic/gin"
 )
 

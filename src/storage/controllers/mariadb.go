@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/DikosAs/GoAuthApi.git/src/types"
+	"github.com/DikosAs/auth-micro_service.git/src/types"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

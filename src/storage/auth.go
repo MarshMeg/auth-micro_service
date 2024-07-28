@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/DikosAs/GoAuthApi.git/src/types"
+	"github.com/DikosAs/auth-micro_service.git/src/types"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 	"strings"
