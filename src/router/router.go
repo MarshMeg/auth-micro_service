@@ -13,7 +13,8 @@ func NewRouter(handler *handler.Handler) *Router {
 	return &Router{handler: handler}
 }
 
-func (r *Router) InitRoutes() *gin.Engine {
+func (r *Router) InitRoutes(mode string) *gin.Engine {
+	gin.SetMode(mode)
 	router := gin.New()
 
 	api := router.Group("/api")
@@ -24,7 +25,7 @@ func (r *Router) InitRoutes() *gin.Engine {
 			{
 				auth.POST("/register", r.handler.Register)
 				auth.POST("/login", r.handler.Login)
-				//auth.GET("/check_auth", r.handler.CheckAuth)
+				auth.GET("/check_auth", r.handler.CheckAuth)
 			}
 		}
 	}

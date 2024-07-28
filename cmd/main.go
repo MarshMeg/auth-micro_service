@@ -30,7 +30,7 @@ func main() {
 	var appRouter *router.Router = router.NewRouter(appHandler)
 
 	srv := new(server.Server)
-	if err := srv.Run(viper.GetString("app.port"), appRouter.InitRoutes()); err != nil {
+	if err := srv.Run(viper.GetString("app.port"), appRouter.InitRoutes(viper.GetString("app.mode"))); err != nil {
 		log.Fatal(err.Error())
 	}
 }

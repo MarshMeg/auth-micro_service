@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/DikosAs/GoAuthApi.git/src/storage"
-	"github.com/DikosAs/GoAuthApi.git/src/storage/controllers"
 	"github.com/DikosAs/GoAuthApi.git/src/types"
 	"github.com/gin-gonic/gin"
 	"io"
@@ -27,14 +26,9 @@ type AuthLogin struct {
 	Password string `json:"password"`
 }
 
-type Token struct {
-	token string
-	ttl   int
-}
-
 type AuthTokens struct {
-	AccessToken  *controllers.AccessToken
-	RefreshToken *controllers.RefreshToken
+	AccessToken  *types.Token
+	RefreshToken *types.Token
 }
 
 const (
@@ -45,8 +39,13 @@ const (
 func (h *AuthHandler) Register(c *gin.Context) {
 	var input types.User
 
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
+	if err := c.BindJSON(&input); err != nil || input.Username == "" || input.Password == "" {
+		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
+		return
+	}
+
+	if _, err := h.storage.Auth.GetUser(input.Username, 0); err == nil {
+		newErrorResponse(c, http.StatusBadRequest, "User is already registered")
 		return
 	}
 
@@ -74,15 +73,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input AuthLogin
 
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, "invalid input body")
+	if err := c.BindJSON(&input); err != nil || input.Username == "" || input.Password == "" {
+		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
 		return
 	}
 
-	user, err := h.storage.Auth.GetUser(&types.User{
-		Username: input.Username,
-		Password: passwdHash(input.Password),
-	})
+	user, err := h.storage.Auth.GetUser(input.Username, 0)
 
 	tokens, err := h.generateTokens(user)
 	if err != nil {
@@ -94,27 +90,40 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.SetCookie("X-Refresh-Token", tokens.RefreshToken.Token, tokens.RefreshToken.TTL, "/", "localhost", false, true)
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"tokens": tokens,
+		"username": user.Username,
 	})
 }
 
-//func (h *AuthHandler) CheckAuth(c *gin.Context) {
-//	token := c.Query("token")
-//	if token == "" {
-//		newErrorResponse(c, http.StatusBadRequest, "invalid token")
-//		return
-//	}
-//
-//	user, err := h.services.VerifyToken(token)
-//	if err != nil {
-//		newErrorResponse(c, http.StatusInternalServerError, "token not found in database")
-//		return
-//	}
-//
-//	c.JSON(http.StatusOK, map[string]interface{}{
-//		"user": user,
-//	})
-//}
+func (h *AuthHandler) CheckAuth(c *gin.Context) {
+	var token string
+	switch c.GetHeader("X-Real-IP") {
+	case "service":
+		token = c.Query("token")
+		if token == "" {
+			newErrorResponse(c, http.StatusBadRequest, "Invalid params")
+			return
+		}
+	default:
+		token, _ = c.Cookie("X-Access-Token")
+		if token == "" {
+			newErrorResponse(c, http.StatusUnauthorized, "Token not found in \"X-Access-Token\" header. You not authenticated")
+			return
+		}
+	}
+	tokenType, userId, err := h.storage.Auth.GetUserIDByToken(token)
+	if err != nil {
+		newErrorResponse(c, http.StatusUnauthorized, "Not authenticated")
+		return
+	}
+
+	user, err := h.storage.Auth.GetUser("", userId)
+	user.Password = "<secret>"
+
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"user":       user,
+		"token_type": tokenType,
+	})
+}
 
 func passwdHash(passwd string) string {
 	var hash = sha512.New()
@@ -135,13 +144,13 @@ func (h *AuthHandler) generateTokens(user types.User) (*AuthTokens, error) {
 	}
 
 	tokens := &AuthTokens{
-		AccessToken: &controllers.AccessToken{
-			UserID: user.Id,
+		AccessToken: &types.Token{
+			UserId: user.Id,
 			Token:  base64.RawURLEncoding.EncodeToString(accessToken),
 			TTL:    int(accessTokenTTL),
 		},
-		RefreshToken: &controllers.RefreshToken{
-			UserID: user.Id,
+		RefreshToken: &types.Token{
+			UserId: user.Id,
 			Token:  base64.RawURLEncoding.EncodeToString(refreshToken),
 			TTL:    int(refreshTokenTTL),
 		},

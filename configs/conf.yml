@@ -1,4 +1,5 @@
 app:
+  mode: debug # release|debug|test
   port: 8080
 
 db_link: "root:q1w2e3r4t5y6@tcp(localhost:3336)/app"

@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"github.com/DikosAs/GoAuthApi.git/src/storage/controllers"
 	"github.com/DikosAs/GoAuthApi.git/src/types"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
@@ -9,9 +8,9 @@ import (
 
 type Auth interface {
 	CreateUser(user types.User) (types.User, error)
-	GetUser(u *types.User) (types.User, error)
-	SetTokens(access *controllers.AccessToken, refresh *controllers.RefreshToken) error
-	GetTokens(t string) (string, error)
+	GetUser(name string, id int) (types.User, error)
+	SetTokens(access *types.Token, refresh *types.Token) error
+	GetUserIDByToken(t string) (string, int, error)
 }
 
 type Cache interface {
