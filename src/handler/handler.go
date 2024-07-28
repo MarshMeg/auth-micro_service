@@ -9,6 +9,7 @@ type Auth interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)
 	CheckAuth(c *gin.Context)
+	PatchUser(c *gin.Context)
 }
 
 type Handler struct {

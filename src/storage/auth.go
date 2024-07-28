@@ -65,3 +65,7 @@ func (d *AuthStorage) GetUserIDByToken(t string) (string, int, error) {
 	id, err := types.StrToInt(parts[1])
 	return parts[0], id, err
 }
+
+func (d *AuthStorage) UpdateUser(user types.User) error {
+	return d.db.Model(&user).Update("username", user.Username).Update("password", user.Password).Error
+}

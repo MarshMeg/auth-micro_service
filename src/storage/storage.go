@@ -11,6 +11,7 @@ type Auth interface {
 	GetUser(name string, id int) (types.User, error)
 	SetTokens(access *types.Token, refresh *types.Token) error
 	GetUserIDByToken(t string) (string, int, error)
+	UpdateUser(user types.User) error
 }
 
 type Cache interface {
