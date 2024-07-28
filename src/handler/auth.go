@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/DikosAs/auth-micro_service.git/src/storage"
 	"github.com/DikosAs/auth-micro_service.git/src/types"
+	"github.com/DikosAs/auth-micro_service.git/src/types/request"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -95,34 +96,42 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) CheckAuth(c *gin.Context) {
-	var token string
-	switch c.GetHeader("X-Real-IP") {
-	case "service":
-		token = c.Query("token")
-		if token == "" {
-			newErrorResponse(c, http.StatusBadRequest, "Invalid params")
-			return
-		}
-	default:
-		token, _ = c.Cookie("X-Access-Token")
-		if token == "" {
-			newErrorResponse(c, http.StatusUnauthorized, "Token not found in \"X-Access-Token\" header. You not authenticated")
-			return
-		}
-	}
-	tokenType, userId, err := h.storage.Auth.GetUserIDByToken(token)
-	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, "Not authenticated")
-		return
-	}
+	tokenType, userId, _ := h.getAuth(c)
 
-	user, err := h.storage.Auth.GetUser("", userId)
+	user, _ := h.storage.Auth.GetUser("", userId)
 	user.Password = "<secret>"
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"user":       user,
 		"token_type": tokenType,
 	})
+}
+
+func (h *AuthHandler) PatchUser(c *gin.Context) {
+	_, userId, initializer := h.getAuth(c)
+	if initializer == request.Service {
+		newErrorResponse(c, http.StatusForbidden, "The services do not have access to user accounts")
+		return
+	}
+
+	var input types.User
+	if err := c.BindJSON(&input); err != nil || input.Username == "" {
+		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
+		return
+	}
+
+	if userId != input.Id {
+		newErrorResponse(c, http.StatusForbidden, "You do not have access to this account")
+	}
+
+	input.Password = passwdHash(input.Password)
+	err := h.storage.UpdateUser(input)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, "error")
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]interface{}{})
 }
 
 func passwdHash(passwd string) string {
@@ -160,4 +169,32 @@ func (h *AuthHandler) generateTokens(user types.User) (*AuthTokens, error) {
 		return &AuthTokens{}, err
 	}
 	return tokens, nil
+}
+
+func (h *AuthHandler) getAuth(c *gin.Context) (string, int, int) {
+	var token string
+	var initializer int
+	switch c.GetHeader("X-Real-IP") {
+	case "service":
+		token = c.Query("token")
+		initializer = request.Service
+		if token == "" {
+			newErrorResponse(c, http.StatusBadRequest, "Invalid params")
+			return "", 0, initializer
+		}
+	default:
+		token, _ = c.Cookie("X-Access-Token")
+		initializer = request.User
+		if token == "" {
+			newErrorResponse(c, http.StatusUnauthorized, "Token not found in \"X-Access-Token\" header. You not authenticated")
+			return "", 0, initializer
+		}
+	}
+	tokenType, userId, err := h.storage.Auth.GetUserIDByToken(token)
+	if err != nil {
+		newErrorResponse(c, http.StatusUnauthorized, "Not authenticated")
+		return "", 0, initializer
+	}
+
+	return tokenType, userId, initializer
 }
