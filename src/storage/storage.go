@@ -13,6 +13,7 @@ type Auth interface {
 	GetUserIDByToken(t string) (string, int, error)
 	UpdateUser(user types.User) error
 	GetUsers(filters *types.User) ([]types.User, error)
+	DeleteUser(user *types.User) error
 }
 
 type Cache interface {

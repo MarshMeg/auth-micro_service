@@ -75,7 +75,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input AuthLogin
-
 	if err := c.BindJSON(&input); err != nil || input.Username == "" || input.Password == "" {
 		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
 		return
@@ -159,6 +158,31 @@ func (h *AuthHandler) GetUsers(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, users)
+}
+
+func (h *AuthHandler) DeleteUser(c *gin.Context) {
+	_, userId, initializer := h.getAuth(c)
+	if initializer == request.User {
+		user, _ := h.storage.Auth.GetUser("", userId)
+		if user.Role < userRoles.Admin {
+			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
+			return
+		}
+	}
+
+	val, _ := c.Params.Get("id")
+	user, err := h.storage.GetUser("", types.StrToInt(val))
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = h.storage.DeleteUser(&user)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, map[string]interface{}{})
 }
 
 func passwdHash(passwd string) string {

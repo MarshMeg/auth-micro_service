@@ -84,3 +84,7 @@ func (d *AuthStorage) GetUsers(filters *types.User) ([]types.User, error) {
 	res.Find(&users)
 	return users, res.Error
 }
+
+func (d *AuthStorage) DeleteUser(user *types.User) error {
+	return d.db.Delete(user).Error
+}

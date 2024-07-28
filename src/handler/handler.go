@@ -11,6 +11,7 @@ type Auth interface {
 	CheckAuth(c *gin.Context)
 	PatchUser(c *gin.Context)
 	GetUsers(c *gin.Context)
+	DeleteUser(c *gin.Context)
 }
 
 type Handler struct {
