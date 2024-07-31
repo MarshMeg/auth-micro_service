@@ -8,7 +8,6 @@ import (
 
 type Auth interface {
 	CreateUser(user types.User) (types.User, error)
-	GetUser(name string, id int) (types.User, error)
 	SetTokens(access *types.Token, refresh *types.Token) error
 	GetUserIDByToken(t string) (string, int, error)
 	UpdateUser(user types.User) error

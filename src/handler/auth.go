@@ -47,7 +47,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 	input.Role = userRoles.User
 
-	if _, err := h.storage.Auth.GetUser(input.Username, 0); err == nil {
+	if _, err := h.storage.Auth.GetUsers(&types.User{Username: input.Username}); err == nil {
 		newErrorResponse(c, http.StatusBadRequest, "User is already registered")
 		return
 	}
@@ -80,9 +80,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.storage.Auth.GetUser(input.Username, 0)
+	users, err := h.storage.Auth.GetUsers(&types.User{Username: input.Username})
 
-	tokens, err := h.generateTokens(user)
+	tokens, err := h.generateTokens(users[0])
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -92,18 +92,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.SetCookie("X-Refresh-Token", tokens.RefreshToken.Token, tokens.RefreshToken.TTL, "/", "localhost", false, true)
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"username": user.Username,
+		"username": users[0].Username,
 	})
 }
 
 func (h *AuthHandler) CheckAuth(c *gin.Context) {
 	tokenType, userId, _ := h.getAuth(c)
 
-	user, _ := h.storage.Auth.GetUser("", userId)
-	user.Password = "<secret>"
+	users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
+	users[0].Password = "<secret>"
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"user":       user,
+		"user":       users[0],
 		"token_type": tokenType,
 	})
 }
@@ -115,7 +115,7 @@ func (h *AuthHandler) PatchUser(c *gin.Context) {
 		return
 	}
 
-	userClient, _ := h.storage.GetUser("", userId)
+	userClients, _ := h.storage.GetUsers(&types.User{Id: userId})
 
 	var input types.User
 	if err := c.BindJSON(&input); err != nil || input.Username == "" {
@@ -123,7 +123,7 @@ func (h *AuthHandler) PatchUser(c *gin.Context) {
 		return
 	}
 
-	if userId != input.Id && userClient.Role < userRoles.Admin {
+	if userId != input.Id && userClients[0].Role < userRoles.Admin {
 		newErrorResponse(c, http.StatusForbidden, "You do not have access to this account")
 	}
 
@@ -140,8 +140,8 @@ func (h *AuthHandler) PatchUser(c *gin.Context) {
 func (h *AuthHandler) GetUsers(c *gin.Context) {
 	_, userId, initializer := h.getAuth(c)
 	if initializer == request.User {
-		user, _ := h.storage.Auth.GetUser("", userId)
-		if user.Role < userRoles.Service {
+		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
+		if users[0].Role < userRoles.Service {
 			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
 			return
 		}
@@ -160,24 +160,44 @@ func (h *AuthHandler) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-func (h *AuthHandler) DeleteUser(c *gin.Context) {
+func (h *AuthHandler) GetUserByID(c *gin.Context) {
 	_, userId, initializer := h.getAuth(c)
 	if initializer == request.User {
-		user, _ := h.storage.Auth.GetUser("", userId)
-		if user.Role < userRoles.Admin {
+		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
+		if users[0].Role < userRoles.Admin {
 			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
 			return
 		}
 	}
 
 	val, _ := c.Params.Get("id")
-	user, err := h.storage.GetUser("", types.StrToInt(val))
+	users, err := h.storage.GetUsers(&types.User{Id: types.StrToInt(val)})
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = h.storage.DeleteUser(&user)
+	c.JSON(http.StatusOK, users[0])
+}
+
+func (h *AuthHandler) DeleteUser(c *gin.Context) {
+	_, userId, initializer := h.getAuth(c)
+	if initializer == request.User {
+		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
+		if users[0].Role < userRoles.Admin {
+			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
+			return
+		}
+	}
+
+	val, _ := c.Params.Get("id")
+	users, err := h.storage.GetUsers(&types.User{Id: types.StrToInt(val)})
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = h.storage.DeleteUser(&users[0])
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return

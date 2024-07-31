@@ -32,18 +32,6 @@ func (d *AuthStorage) CreateUser(user types.User) (types.User, error) {
 	return user, nil
 }
 
-func (d *AuthStorage) GetUser(name string, id int) (types.User, error) {
-	var user types.User
-	if name != "" {
-		err := d.db.Where("`username`=?", name).First(&user)
-		return user, err.Error
-	} else if id != 0 {
-		err := d.db.Where("`id`=?", id).First(&user)
-		return user, err.Error
-	}
-	return user, errors.New("user not found")
-}
-
 func (d *AuthStorage) SetTokens(access, refresh *types.Token) error {
 	err := d.cache.Set(context.Background(), access.Token, fmt.Sprintf("access@%d", access.UserId), time.Duration(access.TTL)).Err()
 	if err != nil {
