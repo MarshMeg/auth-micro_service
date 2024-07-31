@@ -28,6 +28,7 @@ func (r *Router) InitRoutes(mode string) *gin.Engine {
 				auth.GET("/check_auth", r.handler.CheckAuth)
 				auth.GET("/users", r.handler.GetUsers)
 
+				auth.GET("/user/:id", r.handler.GetUserByID)
 				auth.DELETE("/user/:id", r.handler.DeleteUser)
 			}
 		}
