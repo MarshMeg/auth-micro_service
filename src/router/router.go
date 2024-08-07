@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/DikosAs/auth-micro_service.git/src/handler"
+	"github.com/MarshMeg/auth-micro_service.git/src/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,17 +21,18 @@ func (r *Router) InitRoutes(mode string) *gin.Engine {
 	{
 		v1 := api.Group("/v1")
 		{
-			auth := v1.Group("/auth")
+			user := v1.Group("/user")
 			{
-				auth.POST("/register", r.handler.Register)
-				auth.POST("/login", r.handler.Login)
-				auth.GET("/check_auth", r.handler.CheckAuth)
-				auth.GET("/users", r.handler.GetUsers)
+				user.POST("/register", r.handler.Register)
+				user.POST("/login", r.handler.Login)
+				user.GET("/check_auth", r.handler.CheckAuth)
+				user.GET("/users", r.handler.GetUsers)
 
-				auth.GET("/user/:id", r.handler.GetUserByID)
-				auth.PATCH("/user", r.handler.PatchUser)
-				auth.DELETE("/user/:id", r.handler.DeleteUser)
+				user.GET("/:id", r.handler.GetUserByID)
+				user.PATCH("/", r.handler.PatchUser)
+				user.DELETE("/:id", r.handler.DeleteUser)
 			}
+
 		}
 	}
 

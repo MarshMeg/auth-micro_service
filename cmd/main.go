@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/DikosAs/auth-micro_service.git/src/handler"
-	"github.com/DikosAs/auth-micro_service.git/src/router"
-	"github.com/DikosAs/auth-micro_service.git/src/server"
-	"github.com/DikosAs/auth-micro_service.git/src/storage"
-	"github.com/DikosAs/auth-micro_service.git/src/storage/controllers"
+	"github.com/MarshMeg/auth-micro_service.git/src/handler"
+	"github.com/MarshMeg/auth-micro_service.git/src/router"
+	"github.com/MarshMeg/auth-micro_service.git/src/server"
+	"github.com/MarshMeg/auth-micro_service.git/src/storage"
+	"github.com/MarshMeg/auth-micro_service.git/src/storage/controllers"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/viper"

@@ -1,4 +1,4 @@
-module github.com/DikosAs/auth-micro_service.git
+module github.com/MarshMeg/auth-micro_service.git
 
 go 1.22
 

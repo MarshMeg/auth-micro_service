@@ -13,7 +13,7 @@
 		<tr>
 			<td>Production</td>
 			<td>
-				<img src="https://github.com/DikosAs/auth-micro_service/actions/workflows/ci.yaml/badge.svg" alt="release ci pipeline">
+				<img src="https://github.com/MarshMeg/auth-micro_service/actions/workflows/ci.yaml/badge.svg" alt="release ci pipeline">
 			</td>
 			<td>
 				No
@@ -22,7 +22,7 @@
 		<tr>
 			<td>Dev</td>
 			<td>
-				<img src="https://github.com/DikosAs/auth-micro_service/actions/workflows/ci.yaml/badge.svg?branch=dev" alt="release ci pipeline">
+				<img src="https://github.com/MarshMeg/auth-micro_service/actions/workflows/ci.yaml/badge.svg?branch=dev" alt="release ci pipeline">
 			</td>
 		</tr>
 	</tbody>

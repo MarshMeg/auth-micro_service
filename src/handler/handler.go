@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/DikosAs/auth-micro_service.git/src/storage"
+	"github.com/MarshMeg/auth-micro_service.git/src/storage"
 	"github.com/gin-gonic/gin"
 )
 
