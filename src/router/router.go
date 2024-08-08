@@ -13,28 +13,38 @@ func NewRouter(handler *handler.Handler) *Router {
 	return &Router{handler: handler}
 }
 
-func (r *Router) InitRoutes(mode string) *gin.Engine {
+func (r *Router) InitRoutes(mode, prefix string) *gin.Engine {
 	gin.SetMode(mode)
 	router := gin.New()
 
-	api := router.Group("/api")
+	root := router.Group(prefix)
 	{
-		v1 := api.Group("/v1")
+		root.GET("/status", r.CheckStatus)
+		auth := root.Group("/auth")
 		{
-			user := v1.Group("/user")
-			{
-				user.POST("/register", r.handler.Register)
-				user.POST("/login", r.handler.Login)
-				user.GET("/check_auth", r.handler.CheckAuth)
-				user.GET("/users", r.handler.GetUsers)
-
-				user.GET("/:id", r.handler.GetUserByID)
-				user.PATCH("/", r.handler.PatchUser)
-				user.DELETE("/:id", r.handler.DeleteUser)
-			}
-
+			auth.POST("/register", r.handler.Auth.Register)
+			auth.POST("/login", r.handler.Auth.Login)
+			auth.GET("/check_auth", r.handler.Auth.CheckAuth)
+		}
+		users := root.Group("/users")
+		{
+			users.GET("/:id", r.handler.User.GetUser)
+			users.PATCH("/:id", r.handler.User.PatchUser)
+			users.DELETE("/:id", r.handler.User.DeleteUser)
+			users.GET("/", r.handler.User.GetUsers)
+		}
+		groups := root.Group("/groups")
+		{
+			groups.GET("/", r.CheckStatus)
+			groups.POST("/", r.CheckStatus)
+			groups.PATCH("/", r.CheckStatus)
+			groups.DELETE("/", r.CheckStatus)
 		}
 	}
 
 	return router
+}
+
+func (r *Router) CheckStatus(c *gin.Context) {
+	c.JSON(200, map[string]interface{}{})
 }

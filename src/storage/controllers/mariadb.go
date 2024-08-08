@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/MarshMeg/auth-micro_service.git/src/types"
+	"github.com/MarshMeg/auth-micro_service.git/src/types/user"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -12,7 +12,7 @@ func NewMysqlClient(link string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&types.User{})
+	err = db.AutoMigrate(&user.User{})
 	if err != nil {
 		return nil, err
 	}

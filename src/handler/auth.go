@@ -6,9 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/MarshMeg/auth-micro_service.git/src/storage"
-	"github.com/MarshMeg/auth-micro_service.git/src/types"
-	"github.com/MarshMeg/auth-micro_service.git/src/types/request"
-	userRoles "github.com/MarshMeg/auth-micro_service.git/src/types/user"
+	"github.com/MarshMeg/auth-micro_service.git/src/types/auth"
+	"github.com/MarshMeg/auth-micro_service.git/src/types/user"
+	"github.com/MarshMeg/auth-micro_service.git/src/types/user/roles"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -29,8 +29,8 @@ type AuthLogin struct {
 }
 
 type AuthTokens struct {
-	AccessToken  *types.Token
-	RefreshToken *types.Token
+	AccessToken  *auth.Token
+	RefreshToken *auth.Token
 }
 
 const (
@@ -39,27 +39,27 @@ const (
 )
 
 func (h *AuthHandler) Register(c *gin.Context) {
-	var input types.User
+	var input user.User
 
 	if err := c.BindJSON(&input); err != nil || input.Username == "" || input.Password == "" {
 		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
 		return
 	}
-	input.Role = userRoles.User
+	input.RoleName = roles.Member().RoleName
 
-	if _, err := h.storage.Auth.GetUsers(&types.User{Username: input.Username}); err == nil {
+	if _, err := h.storage.User.GetUsers(&user.User{Username: input.Username}); err == nil {
 		newErrorResponse(c, http.StatusBadRequest, "User is already registered")
 		return
 	}
 
 	input.Password = passwdHash(input.Password)
-	user, err := h.storage.Auth.CreateUser(input)
+	createdUser, err := h.storage.User.CreateUser(input)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	tokens, err := h.generateTokens(user)
+	tokens, err := generateTokens(h.storage.Auth, createdUser)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -69,7 +69,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.SetCookie("X-Refresh-Token", tokens.RefreshToken.Token, tokens.RefreshToken.TTL, "/", "localhost", false, true)
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"username": user.Username,
+		"username": createdUser.Username,
 	})
 }
 
@@ -80,9 +80,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	users, err := h.storage.Auth.GetUsers(&types.User{Username: input.Username})
+	getUser, err := h.storage.User.GetUser(&user.User{Username: input.Username})
 
-	tokens, err := h.generateTokens(users[0])
+	tokens, err := generateTokens(h.storage.Auth, getUser)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -92,117 +92,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.SetCookie("X-Refresh-Token", tokens.RefreshToken.Token, tokens.RefreshToken.TTL, "/", "localhost", false, true)
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"username": users[0].Username,
+		"username": getUser.Username,
 	})
 }
 
 func (h *AuthHandler) CheckAuth(c *gin.Context) {
-	tokenType, userId, _ := h.getAuth(c)
-
-	users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
-	users[0].Password = "<secret>"
+	_, authUser := NewAuthService(h.storage).CheckAuth(c, 0, true)
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"user":       users[0],
-		"token_type": tokenType,
+		"user": authUser.Return(),
 	})
-}
-
-func (h *AuthHandler) PatchUser(c *gin.Context) {
-	_, userId, initializer := h.getAuth(c)
-	if initializer == request.Service {
-		newErrorResponse(c, http.StatusForbidden, "The services do not have access to user accounts")
-		return
-	}
-
-	userClients, _ := h.storage.GetUsers(&types.User{Id: userId})
-
-	var input types.User
-	if err := c.BindJSON(&input); err != nil || input.Username == "" {
-		newErrorResponse(c, http.StatusBadRequest, "Invalid body")
-		return
-	}
-
-	if userId != input.Id && userClients[0].Role < userRoles.Admin {
-		newErrorResponse(c, http.StatusForbidden, "You do not have access to this account")
-	}
-
-	input.Password = passwdHash(input.Password)
-	err := h.storage.UpdateUser(input)
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, "error")
-		return
-	}
-
-	c.JSON(http.StatusOK, map[string]interface{}{})
-}
-
-func (h *AuthHandler) GetUsers(c *gin.Context) {
-	_, userId, initializer := h.getAuth(c)
-	if initializer == request.User {
-		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
-		if users[0].Role < userRoles.Service {
-			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
-			return
-		}
-	}
-
-	users, err := h.storage.GetUsers(&types.User{
-		Id:       types.StrToInt(c.Query("id")),
-		Username: c.Query("username"),
-		Role:     types.StrToInt(c.Query("role")),
-	})
-
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	c.JSON(http.StatusOK, users)
-}
-
-func (h *AuthHandler) GetUserByID(c *gin.Context) {
-	_, userId, initializer := h.getAuth(c)
-	if initializer == request.User {
-		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
-		if users[0].Role < userRoles.Admin {
-			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
-			return
-		}
-	}
-
-	val, _ := c.Params.Get("id")
-	users, err := h.storage.GetUsers(&types.User{Id: types.StrToInt(val)})
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	c.JSON(http.StatusOK, users[0])
-}
-
-func (h *AuthHandler) DeleteUser(c *gin.Context) {
-	_, userId, initializer := h.getAuth(c)
-	if initializer == request.User {
-		users, _ := h.storage.Auth.GetUsers(&types.User{Id: userId})
-		if users[0].Role < userRoles.Admin {
-			newErrorResponse(c, http.StatusForbidden, http.StatusText(http.StatusForbidden))
-			return
-		}
-	}
-
-	val, _ := c.Params.Get("id")
-	users, err := h.storage.GetUsers(&types.User{Id: types.StrToInt(val)})
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	err = h.storage.DeleteUser(&users[0])
-	if err != nil {
-		newErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	c.JSON(http.StatusOK, map[string]interface{}{})
 }
 
 func passwdHash(passwd string) string {
@@ -212,7 +111,7 @@ func passwdHash(passwd string) string {
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func (h *AuthHandler) generateTokens(user types.User) (*AuthTokens, error) {
+func generateTokens(storage *storage.AuthStorage, user user.User) (*AuthTokens, error) {
 	accessToken := make([]byte, 128)
 	refreshToken := make([]byte, 128)
 
@@ -224,48 +123,20 @@ func (h *AuthHandler) generateTokens(user types.User) (*AuthTokens, error) {
 	}
 
 	tokens := &AuthTokens{
-		AccessToken: &types.Token{
+		AccessToken: &auth.Token{
 			UserId: user.Id,
 			Token:  base64.RawURLEncoding.EncodeToString(accessToken),
 			TTL:    int(accessTokenTTL),
 		},
-		RefreshToken: &types.Token{
+		RefreshToken: &auth.Token{
 			UserId: user.Id,
 			Token:  base64.RawURLEncoding.EncodeToString(refreshToken),
 			TTL:    int(refreshTokenTTL),
 		},
 	}
 
-	if err := h.storage.Auth.SetTokens(tokens.AccessToken, tokens.RefreshToken); err != nil {
+	if err := storage.SetTokens(tokens.AccessToken, tokens.RefreshToken); err != nil {
 		return &AuthTokens{}, err
 	}
 	return tokens, nil
-}
-
-func (h *AuthHandler) getAuth(c *gin.Context) (string, int, int) {
-	var token string
-	var initializer int
-	switch c.GetHeader("X-Real-IP") {
-	case "service":
-		token = c.Query("token")
-		initializer = request.Service
-		if token == "" {
-			newErrorResponse(c, http.StatusBadRequest, "Invalid params")
-			return "", 0, initializer
-		}
-	default:
-		token, _ = c.Cookie("X-Access-Token")
-		initializer = request.User
-		if token == "" {
-			newErrorResponse(c, http.StatusUnauthorized, "Token not found in \"X-Access-Token\" header. You not authenticated")
-			return "", 0, initializer
-		}
-	}
-	tokenType, userId, err := h.storage.Auth.GetUserIDByToken(token)
-	if err != nil {
-		newErrorResponse(c, http.StatusUnauthorized, "Not authenticated")
-		return "", 0, initializer
-	}
-
-	return tokenType, userId, initializer
 }
